@@ -1,11 +1,45 @@
 (ns babel-tdd.core
   (:require-macros [cljs.core.async :refer [go]]
-                   [babel-tdd.xyz])
+                   [babel-tdd.read-object]
+                   [babel-tdd.macro :refer [m1 load-object-m1]])
   (:require [cljsjs.babylon]
      [oops.core :refer [oget oset!]]
+            [babel-tdd.load-object :refer [load-object resolve-test]]
+            [babel-tdd.update-fns]
     ))
 
-(prn (babel-tdd.xyz/inline "project.clj"))
+
+(defn ftest [] 123)
+
+(defn msg [txt]
+  (oset! (.getElementById js/document "msg") "textContent" txt))
+
+;(def inlined-object (macroexpand-1 '(babel-tdd.read-object/inline-stored-object "public/data/objects/line.json")) )
+(def inlined-object (babel-tdd.read-object/inline-stored-object "public/data/objects/line.json"))
+
+; (def inline2 (babel-tdd.read-object/inline-stored-object "public/data/objects/cave-segment.json"))
+
+(prn "inlined-object:" inlined-object)
+
+(prn "inlined-object call upd-fn:" ((:update-fn inlined-object)))
+
+
+;(def inline3 (load-object inlined-object))
+;(prn "load-object:" inline3)
+
+;(prn "load-object-m1" (load-object-m1 inlined-object))
+
+;(def asdf (resolve (first (:update-fns inline3))))
+; (prn "asdf:" asdf)
+(msg "asd")
+
+(prn "resolve-test:" (resolve-test))
+
+
+(prn "m1 test:" (m1 2))
+
+(def line-string (babel-tdd.read-object/inline "public/data/objects/line.json"))
+(prn (js->clj (.parse js/JSON line-string) :keywordize-keys true ))
 
 (defn f [] 1)
 

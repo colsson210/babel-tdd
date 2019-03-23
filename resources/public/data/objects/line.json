@@ -1,0 +1,8 @@
+{
+  "direction": [
+    0,
+    -1
+  ],
+  "update-fn": "babel-tdd.update-fns/a",
+  "shape": "line"
+}

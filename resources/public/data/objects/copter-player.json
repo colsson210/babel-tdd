@@ -1,0 +1,14 @@
+{
+  "update-fns": [
+    "updatefns/copter-handle-player-input",
+    "updatefns/decrease-direction",
+    "updatefns/copter-gravity",
+    "destroyfns/destroy-on-collision"
+  ],
+  "type": "player",
+  "shape": "circle",
+  "position": [250, 250],
+  "direction": [0.0, 1.0],
+  "radius": 20,
+  "color": [255, 255, 100]
+}

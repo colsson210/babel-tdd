@@ -1,0 +1,10 @@
+{
+  "shapes": [],
+  "cave-segment-element-template": "public/data/objects/cave-segment-element.json",
+  "segment-width": 100,
+  "segment-height": 300,
+  "shape": "shape-coll",
+  "type": "cave-segment",
+  "direction": [-5, 0],
+  "update-fns": ["destroyfns/destroy-on-cave-max-x-below-0"]
+}
