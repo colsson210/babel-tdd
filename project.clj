@@ -44,4 +44,4 @@
                                    :output-to "resources/public/cljs/tests/all-tests.js"}}]
               }
   :clean-targets ^{:protect false} [:target-path "out" "resources/public/cljs"]
-  :figwheel  { :css-dirs ["resources/public/css"]})
+  :figwheel  { :css-dirs ["resources/public/css"] })

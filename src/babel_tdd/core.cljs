@@ -12,31 +12,20 @@
 (defn ftest [] 123)
 
 (defn msg [txt]
-  (oset! (.getElementById js/document "msg") "textContent" txt))
+  (oset! (.getElementById js/document "msg") "textContent" (str txt)))
 
 ;(def inlined-object (macroexpand-1 '(babel-tdd.read-object/inline-stored-object "public/data/objects/line.json")) )
-(def inlined-object (babel-tdd.read-object/inline-stored-object "public/data/objects/line.json"))
+ (def inlined-object (babel-tdd.read-object/inline-stored-object "public/data/objects/line.json"))
 
 ; (def inline2 (babel-tdd.read-object/inline-stored-object "public/data/objects/cave-segment.json"))
 
 (prn "inlined-object:" inlined-object)
 
-(prn "inlined-object call upd-fn:" ((:update-fn inlined-object)))
+;(prn "inlined-object call upd-fn:" ((:update-fn inlined-object)))
+(prn "second" ((second (:update-fns inlined-object))))
 
+(msg inlined-object)
 
-;(def inline3 (load-object inlined-object))
-;(prn "load-object:" inline3)
-
-;(prn "load-object-m1" (load-object-m1 inlined-object))
-
-;(def asdf (resolve (first (:update-fns inline3))))
-; (prn "asdf:" asdf)
-(msg "asd")
-
-(prn "resolve-test:" (resolve-test))
-
-
-(prn "m1 test:" (m1 2))
 
 (def line-string (babel-tdd.read-object/inline "public/data/objects/line.json"))
 (prn (js->clj (.parse js/JSON line-string) :keywordize-keys true ))

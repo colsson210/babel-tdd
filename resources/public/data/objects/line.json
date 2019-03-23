@@ -3,6 +3,9 @@
     0,
     -1
   ],
+  "from": [400, 10],
+  "to": [300, 300],
+  "update-fns": ["babel-tdd.update-fns/a", "babel-tdd.update-fns/b"],
   "update-fn": "babel-tdd.update-fns/a",
   "shape": "line"
 }

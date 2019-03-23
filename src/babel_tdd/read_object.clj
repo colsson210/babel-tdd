@@ -3,6 +3,8 @@
             [clojure.data.json]
             [clojure.string]))
 
+(defn fx [v] `(cljs.core/resolve '~(read-string v)))
+
 (defn load-object [obj]
   (reduce-kv
     (fn [m k v]
@@ -10,11 +12,9 @@
         m
         k
         (cond
-          (= k :update-fn-z) (str `(resolve (cljs.core/symbol ~v)))
-          (= k :update-fn-a) `(cljs.core/resolve 'babel-tdd.update-fns/a)
-          (= k :update-fn-b) `(cljs.core/symbol "babel-tdd.update-fns" "a")
-          (= k :update-fn) `(cljs.core/resolve '~(read-string v))
-
+          (= k :update-fn) (fx v)
+          ; (= k :update-fns) `(cljs.core/resolve '~(read-string (first v)))
+          (= k :update-fns) (vec (map fx v))
           (map? v) (load-object v)
           :else v)))
     {}
