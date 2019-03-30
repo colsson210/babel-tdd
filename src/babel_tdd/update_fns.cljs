@@ -1,6 +1,9 @@
 (ns babel-tdd.update-fns)
 
 
-(defn a [] "123a")
+(def a (partial + 1.1))
 
-(defn b [] "556b")
+(def b (partial * 1.1))
+
+(defn move-right [obj]
+  (update obj :x (fn [x] (mod (inc x) 200))))

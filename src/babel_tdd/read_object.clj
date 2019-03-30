@@ -3,19 +3,17 @@
             [clojure.data.json]
             [clojure.string]))
 
-(defn fx [v] `(cljs.core/resolve '~(read-string v)))
+(defn emit-cljs-resolve [v] `(cljs.core/resolve '~(read-string v)))
 
-(defn load-object [obj]
+(defn read-object-fn [obj]
   (reduce-kv
     (fn [m k v]
       (assoc
         m
         k
         (cond
-          (= k :update-fn) (fx v)
-          ; (= k :update-fns) `(cljs.core/resolve '~(read-string (first v)))
-          (= k :update-fns) (vec (map fx v))
-          (map? v) (load-object v)
+          (= k :update-fns) (vec (map emit-cljs-resolve v))
+          (map? v) (read-object-fn v)
           :else v)))
     {}
     obj))
@@ -30,10 +28,10 @@
                      (and (string? value) (clojure.string/ends-with? value ".json")) (read-json value)
                      :else value))]
     (clojure.data.json/read-str
-      (slurp (clojure.java.io/resource json-filename) )
+      (slurp (clojure.java.io/resource json-filename))
       :key-fn keyword
       :value-fn value-fn)))
 
-(defmacro inline-stored-object [json-path]
-  (load-object (read-json json-path)))
+(defmacro read-object [json-path]
+  (read-object-fn (read-json json-path)))
 

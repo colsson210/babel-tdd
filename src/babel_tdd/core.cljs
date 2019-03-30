@@ -1,39 +1,14 @@
 (ns babel-tdd.core
-  (:require-macros [cljs.core.async :refer [go]]
-                   [babel-tdd.read-object]
-                   [babel-tdd.macro :refer [m1 load-object-m1]])
   (:require [cljsjs.babylon]
      [oops.core :refer [oget oset!]]
-            [babel-tdd.load-object :refer [load-object resolve-test]]
-            [babel-tdd.update-fns]
-    ))
-
-
-(defn ftest [] 123)
-
-(defn msg [txt]
-  (oset! (.getElementById js/document "msg") "textContent" (str txt)))
-
-;(def inlined-object (macroexpand-1 '(babel-tdd.read-object/inline-stored-object "public/data/objects/line.json")) )
- (def inlined-object (babel-tdd.read-object/inline-stored-object "public/data/objects/line.json"))
-
-; (def inline2 (babel-tdd.read-object/inline-stored-object "public/data/objects/cave-segment.json"))
-
-(prn "inlined-object:" inlined-object)
-
-;(prn "inlined-object call upd-fn:" ((:update-fn inlined-object)))
-(prn "second" ((second (:update-fns inlined-object))))
-
-(msg inlined-object)
-
-
-(def line-string (babel-tdd.read-object/inline "public/data/objects/line.json"))
-(prn (js->clj (.parse js/JSON line-string) :keywordize-keys true ))
-
-(defn f [] 1)
+            [babel-tdd.all-objects :refer [all-objects]]))
 
 (enable-console-print!)
 
+(defn msg [& txt]
+  (oset! (.getElementById js/document "msg") "textContent" (apply str txt)))
+
+(msg all-objects)
 
 (defn set-color [scene obj r g b]
   (let [material (js/BABYLON.StandardMaterial. "material" scene)]
@@ -62,9 +37,24 @@
         (let [key-fn (keys-fn-map (oget event "sourceEvent.key"))]
           (if (fn? key-fn) (key-fn)))))))
 
+
+(defn update-state [state]
+  (map
+    (fn [obj] ((comp (:update-fns state)) obj))
+    state))
+
 (defn scene1 []
   (let [{:keys [engine scene camera light]} (init)
-        box (js/BABYLON.Mesh.CreateBox "box" 2 scene)]
+        box (js/BABYLON.Mesh.CreateBox "box" 2 scene)
+        x (atom -1.0)
+        state (atom [{}])
+        move-fps (fn [x move-fn fps]
+                   (let [next-x (move-fn x)
+                         x-diff (- next-x x)]
+                     (+ x (/ x-diff fps))))
+        within-x-space (fn [x] (if (> x 1) -1.0 x))
+        update-fn (:update-fn (:line all-objects))
+        ]
     (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.8))
     (set-color scene box 0.8 0.1 0.1)
     (set-keys
@@ -74,10 +64,14 @@
     (.runRenderLoop
       engine
       (fn []
-        ; (.getFps engine)
+        (let [fps (.getFps engine)]
+          (swap! x (comp within-x-space move-fps) update-fn fps))
+        (.getFps engine)
         (.render scene)
-        (oset! box "rotation.y" (+ (oget box "rotation.y") 0.01))
-        (oset! box "rotation.z" (+ (oget box "rotation.z") 0.01))))
+        (oset! box "position.x" @x)
+        ;(oset! box "rotation.y" (+ (oget box "rotation.y") 0.01))
+        ; (oset! box "rotation.z" (+ (oget box "rotation.z") 0.01))
+        ))
     ))
 
 (scene1)

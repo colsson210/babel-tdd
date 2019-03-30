@@ -3,7 +3,7 @@
     -1,
     0
   ],
-  "update-fns": [
+  "update-fns-old": [
     "updatefns/color-by-position",
     "destroyfns/destroy-on-edge-collision"
   ],
