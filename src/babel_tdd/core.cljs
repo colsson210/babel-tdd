@@ -1,4 +1,5 @@
 (ns babel-tdd.core
+  (:require-macros [babel-tdd.oget-macros])
   (:require [cljsjs.babylon]
             [oops.core :refer [oget oset!]]
             [babel-tdd.all-objects :refer [all-objects]]))
@@ -11,7 +12,7 @@
 (msg all-objects)
 
 
-(defn set-color [scene obj r g b]
+(defn create-material [scene obj r g b]
   (let [material (js/BABYLON.StandardMaterial. "material" scene)]
     (oset! material "emissiveColor" (js/BABYLON.Color3. r g b))
     (oset! obj "material" material)))
@@ -24,7 +25,7 @@
                                                     (str (gensym "line"))
                                                     (clj->js {:points [(js/BABYLON.Vector3. 0 0 0) (js/BABYLON.Vector3. 1 1 1)]})
                                                     scene))]
-    (set-color scene babylon-shape 1.0 1.0 1.0)
+    (create-material scene babylon-shape 1.0 1.0 1.0)
     (oset! babylon-shape "!update-fn" (:update-fn obj))
     babylon-shape))
 
@@ -47,41 +48,8 @@
               :else current-object))]
     (helper objects)))
 
-
-
-
-
-
-
-
-(comment
-  (defn move-fps [position next-position fps]
-    (map (comp #(/ % fps) -) next-position position))
-  )
-
-(defn update-state [state down-keys fps]
   ; some position changing functions should consider fps and some shouldnt
   ; therefore the fps should be an argument to the update-fn
-  (map
-    (fn [obj] ((:update-fn obj) obj))
-    state))
-
-
-(defn babylon-create-draw-state [scene]
-  (let [babylon-objs (atom {})]
-    (fn [state]
-      (doseq [obj state]
-        (if (not (contains? @babylon-objs (:id obj)))
-          (swap! babylon-objs assoc (:id obj) (create-babylon-shape scene (:shape obj)))))
-      (doseq [obj state]
-        (let [id (:id obj)
-              babylon-obj (id @babylon-objs)]
-          (oset! babylon-obj "position.x" (:x obj 0))
-          (oset! babylon-obj "position.y" (:y obj 0))
-          (oset! babylon-obj "position.z" (:z obj 0))
-          ))
-      (.render scene))))
-
 
 
 ; Movement and collision handling should be done by babylon
@@ -89,19 +57,20 @@
 ; mesh.moveCollision
 ; mesh.onCollide = function(collidedMesh) {
 
+
+
+
 (defn babylon-get-obj [babylon-obj]
-  {:position [(oget babylon-obj "position.x")
-              (oget babylon-obj "position.y")
-              (oget babylon-obj "position.z")]
-   :color [(oget babylon-obj "material.emissiveColor.r")
-           (oget babylon-obj "material.emissiveColor.g")
-           (oget babylon-obj "material.emissiveColor.b")]
-   })
+  (babel-tdd.oget-macros/oget-helper
+    babylon-obj
+    {:position ["position.x" "position.y" "position.z"]
+:color ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
+
+
 
 (defn babylon-update-obj [babylon-obj obj]
   (let [[x y z] (:position obj)
         [r g b] (:color obj)]
-    ;(prn obj)
     (oset! babylon-obj "position.x" x)
     (oset! babylon-obj "position.y" y)
     (oset! babylon-obj "position.z" z)
