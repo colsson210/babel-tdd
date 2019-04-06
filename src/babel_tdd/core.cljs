@@ -10,6 +10,12 @@
 
 (msg all-objects)
 
+
+(defn set-color [scene obj r g b]
+  (let [material (js/BABYLON.StandardMaterial. "material" scene)]
+    (oset! material "emissiveColor" (js/BABYLON.Color3. r g b))
+    (oset! obj "material" material)))
+
 (defn create-babylon-shape [scene obj]
   (let [babylon-shape (cond
                         (= (:shape obj) "box") (js/BABYLON.MeshBuilder.CreateBox (str (gensym "box")) {:size 3} scene)
@@ -18,6 +24,7 @@
                                                     (str (gensym "line"))
                                                     (clj->js {:points [(js/BABYLON.Vector3. 0 0 0) (js/BABYLON.Vector3. 1 1 1)]})
                                                     scene))]
+    (set-color scene babylon-shape 1.0 1.0 1.0)
     (oset! babylon-shape "!update-fn" (:update-fn obj))
     babylon-shape))
 
@@ -40,10 +47,7 @@
               :else current-object))]
     (helper objects)))
 
-(defn set-color [scene obj r g b]
-  (let [material (js/BABYLON.StandardMaterial. "material" scene)]
-    (oset! material "emissiveColor" (js/BABYLON.Color3. r g b))
-    (oset! obj "material" material)))
+
 
 
 
@@ -79,8 +83,6 @@
       (.render scene))))
 
 
-; (init) should return the functions: draw-state, get-fps, get-keys
-
 
 ; Movement and collision handling should be done by babylon
 ; babylon is/has a physics engine
@@ -88,12 +90,25 @@
 ; mesh.onCollide = function(collidedMesh) {
 
 (defn babylon-get-obj [babylon-obj]
-  {:position [(oget babylon-obj "position.x") (oget babylon-obj "position.y") (oget babylon-obj "position.z")]
+  {:position [(oget babylon-obj "position.x")
+              (oget babylon-obj "position.y")
+              (oget babylon-obj "position.z")]
+   :color [(oget babylon-obj "material.emissiveColor.r")
+           (oget babylon-obj "material.emissiveColor.g")
+           (oget babylon-obj "material.emissiveColor.b")]
    })
 
 (defn babylon-update-obj [babylon-obj obj]
-  (let [[x y z] (:position obj)]
-    (oset! babylon-obj "position.x" x)))
+  (let [[x y z] (:position obj)
+        [r g b] (:color obj)]
+    ;(prn obj)
+    (oset! babylon-obj "position.x" x)
+    (oset! babylon-obj "position.y" y)
+    (oset! babylon-obj "position.z" z)
+    (oset! babylon-obj "material.emissiveColor.r" r)
+    (oset! babylon-obj "material.emissiveColor.g" g)
+    (oset! babylon-obj "material.emissiveColor.b" b)
+    ))
 
 (defn babylon-update [babylon-objs]
   (doseq [babylon-obj babylon-objs]
@@ -113,7 +128,6 @@
          keys (atom {})
          box (create-babylon-shape scene (:box all-objects))
          babylon-objs [box]]
-     (set-color scene box 100 111.3 222.86)
      (oset! scene "!actionManager" action-manager)
      (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.0))
      (.render scene)
