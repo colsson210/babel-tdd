@@ -1,0 +1,4 @@
+{
+  "update-fns": ["babel-tdd.update-fns/move-right"],
+  "shape": "box"
+}

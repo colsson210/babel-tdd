@@ -1,4 +1,3 @@
 {
-  "line": "public/data/objects/line.json",
-  "left-circle": "public/data/objects/left-circle.json"
+  "box": "public/data/objects/box.json"
 }

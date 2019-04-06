@@ -1,6 +1,6 @@
 (ns babel-tdd.core
   (:require [cljsjs.babylon]
-     [oops.core :refer [oget oset!]]
+            [oops.core :refer [oget oset!]]
             [babel-tdd.all-objects :refer [all-objects]]))
 
 (enable-console-print!)
@@ -10,70 +10,124 @@
 
 (msg all-objects)
 
+(defn create-babylon-shape [scene obj]
+  (let [babylon-shape (cond
+                        (= (:shape obj) "box") (js/BABYLON.MeshBuilder.CreateBox (str (gensym "box")) {:size 3} scene)
+                        (= (:shape obj) "circle") (js/BABYLON.MeshBuilder.CreateSphere (str (gensym "circle")) {:diameter 1} scene)
+                        (= (:shape obj) "line") (js/BABYLON.MeshBuilder.CreateLines
+                                                    (str (gensym "line"))
+                                                    (clj->js {:points [(js/BABYLON.Vector3. 0 0 0) (js/BABYLON.Vector3. 1 1 1)]})
+                                                    scene))]
+    (oset! babylon-shape "!update-fn" (:update-fn obj))
+    babylon-shape))
+
+(defn ensure-has-babylon-shape [scene obj]
+  (if (and (contains? obj :shape) (not (contains? obj :babylon)))
+    (assoc obj :babylon (create-babylon-shape scene obj))
+    obj))
+
+(defn create-babylon-shapes [scene objects]
+  (letfn [(helper [current-object]
+            (cond
+              (map? current-object)
+              (reduce-kv (fn [m k v] (assoc m k (helper v)))
+                         (if (contains? current-object :shape)
+                           {:babylon (create-babylon-shape scene current-object)}
+                           ; {}
+                           {})
+                         current-object)
+              ; (coll? current-object) (map helper current-object)
+              :else current-object))]
+    (helper objects)))
+
 (defn set-color [scene obj r g b]
   (let [material (js/BABYLON.StandardMaterial. "material" scene)]
     (oset! material "emissiveColor" (js/BABYLON.Color3. r g b))
     (oset! obj "material" material)))
 
-(defn init
-  ([] (init "render-canvas"))
-  ([canvas-id]
-    (let [canvas (.getElementById js/document canvas-id)
-           engine (js/BABYLON.Engine. canvas)
-           scene (js/BABYLON.Scene. engine)
-           camera (js/BABYLON.FreeCamera. "camera" (js/BABYLON.Vector3. 0 0 -10) scene)
-           light (js/BABYLON.PointLight. "light" (js/BABYLON.Vector3. 10 10 0) scene)
-           action-manager (js/BABYLON.ActionManager. scene)]
-       (oset! scene "!actionManager" action-manager)
-      {:engine engine :scene scene :camera camera :light light})))
 
 
-(defn set-keys [scene keys-fn-map]
-  (.registerAction
-    (oget scene "actionManager")
-    (js/BABYLON.ExecuteCodeAction.
-      js/BABYLON.ActionManager.OnKeyDownTrigger
-      (fn [event]
-        (let [key-fn (keys-fn-map (oget event "sourceEvent.key"))]
-          (if (fn? key-fn) (key-fn)))))))
 
 
-(defn update-state [state]
+
+(comment
+  (defn move-fps [position next-position fps]
+    (map (comp #(/ % fps) -) next-position position))
+  )
+
+(defn update-state [state down-keys fps]
+  ; some position changing functions should consider fps and some shouldnt
+  ; therefore the fps should be an argument to the update-fn
   (map
-    (fn [obj] ((comp (:update-fns state)) obj))
+    (fn [obj] ((:update-fn obj) obj))
     state))
 
-(defn scene1 []
-  (let [{:keys [engine scene camera light]} (init)
-        box (js/BABYLON.Mesh.CreateBox "box" 2 scene)
-        x (atom -1.0)
-        state (atom [{}])
-        move-fps (fn [x move-fn fps]
-                   (let [next-x (move-fn x)
-                         x-diff (- next-x x)]
-                     (+ x (/ x-diff fps))))
-        within-x-space (fn [x] (if (> x 1) -1.0 x))
-        update-fn (:update-fn (:line all-objects))
-        ]
-    (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.8))
-    (set-color scene box 0.8 0.1 0.1)
-    (set-keys
-      scene
-      { "ArrowUp" (fn [] (oset! box "position.y" (+ (oget box "position.y") 0.1)))
-       "ArrowDown" (fn [] (oset! box "position.y" (- (oget box "position.y") 0.1)))})
-    (.runRenderLoop
-      engine
-      (fn []
-        (let [fps (.getFps engine)]
-          (swap! x (comp within-x-space move-fps) update-fn fps))
-        (.getFps engine)
-        (.render scene)
-        (oset! box "position.x" @x)
-        ;(oset! box "rotation.y" (+ (oget box "rotation.y") 0.01))
-        ; (oset! box "rotation.z" (+ (oget box "rotation.z") 0.01))
-        ))
-    ))
 
-(scene1)
+(defn babylon-create-draw-state [scene]
+  (let [babylon-objs (atom {})]
+    (fn [state]
+      (doseq [obj state]
+        (if (not (contains? @babylon-objs (:id obj)))
+          (swap! babylon-objs assoc (:id obj) (create-babylon-shape scene (:shape obj)))))
+      (doseq [obj state]
+        (let [id (:id obj)
+              babylon-obj (id @babylon-objs)]
+          (oset! babylon-obj "position.x" (:x obj 0))
+          (oset! babylon-obj "position.y" (:y obj 0))
+          (oset! babylon-obj "position.z" (:z obj 0))
+          ))
+      (.render scene))))
 
 
+; (init) should return the functions: draw-state, get-fps, get-keys
+
+
+; Movement and collision handling should be done by babylon
+; babylon is/has a physics engine
+; mesh.moveCollision
+; mesh.onCollide = function(collidedMesh) {
+
+(defn babylon-get-obj [babylon-obj]
+  {:position [(oget babylon-obj "position.x") (oget babylon-obj "position.y") (oget babylon-obj "position.z")]
+   })
+
+(defn babylon-update-obj [babylon-obj obj]
+  (let [[x y z] (:position obj)]
+    (oset! babylon-obj "position.x" x)))
+
+(defn babylon-update [babylon-objs]
+  (doseq [babylon-obj babylon-objs]
+    (let [update-fn (oget babylon-obj "update-fn")
+          obj (babylon-get-obj babylon-obj)]
+      (babylon-update-obj babylon-obj (update-fn obj)))))
+
+(defn babylon-init
+  ([] (babylon-init "render-canvas"))
+  ([canvas-id]
+   (let [canvas (.getElementById js/document canvas-id)
+         engine (js/BABYLON.Engine. canvas)
+         scene (js/BABYLON.Scene. engine)
+         camera (js/BABYLON.FreeCamera. "camera" (js/BABYLON.Vector3. 0 0 -10) scene)
+         light (js/BABYLON.PointLight. "light" (js/BABYLON.Vector3. 10 10 0) scene)
+         action-manager (js/BABYLON.ActionManager. scene)
+         keys (atom {})
+         box (create-babylon-shape scene (:box all-objects))
+         babylon-objs [box]]
+     (set-color scene box 100 111.3 222.86)
+     (oset! scene "!actionManager" action-manager)
+     (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.0))
+     (.render scene)
+     (.registerAction
+       action-manager
+       (js/BABYLON.ExecuteCodeAction.
+         js/BABYLON.ActionManager.OnKeyDownTrigger
+         (fn [event] (swap! keys assoc (oget event "sourceEvent.key") true))))
+     (.registerAction
+       action-manager
+       (js/BABYLON.ExecuteCodeAction.
+         js/BABYLON.ActionManager.OnKeyUpTrigger
+         (fn [event] (swap! keys dissoc (oget event "sourceEvent.key")))))
+     (.runRenderLoop engine (fn [] (babylon-update babylon-objs) (.render scene)))
+     )))
+
+(babylon-init)
