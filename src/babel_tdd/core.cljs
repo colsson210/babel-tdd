@@ -1,5 +1,5 @@
 (ns babel-tdd.core
-  (:require-macros [babel-tdd.oget-macros])
+  (:require-macros [babel-tdd.oops-macros])
   (:require [cljsjs.babylon]
             [oops.core :refer [oget oset!]]
             [babel-tdd.all-objects :refer [all-objects]]))
@@ -22,9 +22,9 @@
                         (= (:shape obj) "box") (js/BABYLON.MeshBuilder.CreateBox (str (gensym "box")) {:size 3} scene)
                         (= (:shape obj) "circle") (js/BABYLON.MeshBuilder.CreateSphere (str (gensym "circle")) {:diameter 1} scene)
                         (= (:shape obj) "line") (js/BABYLON.MeshBuilder.CreateLines
-                                                    (str (gensym "line"))
-                                                    (clj->js {:points [(js/BABYLON.Vector3. 0 0 0) (js/BABYLON.Vector3. 1 1 1)]})
-                                                    scene))]
+                                                  (str (gensym "line"))
+                                                  (clj->js {:points [(js/BABYLON.Vector3. 0 0 0) (js/BABYLON.Vector3. 1 1 1)]})
+                                                  scene))]
     (create-material scene babylon-shape 1.0 1.0 1.0)
     (oset! babylon-shape "!update-fn" (:update-fn obj))
     babylon-shape))
@@ -48,8 +48,8 @@
               :else current-object))]
     (helper objects)))
 
-  ; some position changing functions should consider fps and some shouldnt
-  ; therefore the fps should be an argument to the update-fn
+; some position changing functions should consider fps and some shouldnt
+; therefore the fps should be an argument to the update-fn
 
 
 ; Movement and collision handling should be done by babylon
@@ -58,26 +58,19 @@
 ; mesh.onCollide = function(collidedMesh) {
 
 
-
-
 (defn babylon-get-obj [babylon-obj]
-  (babel-tdd.oget-macros/oget-helper
+  (babel-tdd.oops-macros/oget-helper
     babylon-obj
     {:position ["position.x" "position.y" "position.z"]
-:color ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
-
-
+     :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
 
 (defn babylon-update-obj [babylon-obj obj]
-  (let [[x y z] (:position obj)
-        [r g b] (:color obj)]
-    (oset! babylon-obj "position.x" x)
-    (oset! babylon-obj "position.y" y)
-    (oset! babylon-obj "position.z" z)
-    (oset! babylon-obj "material.emissiveColor.r" r)
-    (oset! babylon-obj "material.emissiveColor.g" g)
-    (oset! babylon-obj "material.emissiveColor.b" b)
-    ))
+  (babel-tdd.oops-macros/oset!-helper
+    babylon-obj
+    obj
+    {:position ["position.x" "position.y" "position.z"]
+    :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
+
 
 (defn babylon-update [babylon-objs]
   (doseq [babylon-obj babylon-objs]
