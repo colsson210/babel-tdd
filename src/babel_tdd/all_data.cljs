@@ -1,10 +1,10 @@
-(ns babel-tdd.all-objects
+(ns babel-tdd.all-data
   (:require-macros [babel-tdd.read-object])
   (:require [babel-tdd.load-object]))
 
 
-(def all-objects
+(def all-data
   (->>
-    "public/data/objects/all-objects.json"
+    "public/data/objects/all-data.json"
     babel-tdd.read-object/read-object
     babel-tdd.load-object/load-object))

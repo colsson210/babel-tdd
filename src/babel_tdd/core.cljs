@@ -2,14 +2,14 @@
   (:require-macros [babel-tdd.oops-macros])
   (:require [cljsjs.babylon]
             [oops.core :refer [oget oset!]]
-            [babel-tdd.all-objects :refer [all-objects]]))
+            [babel-tdd.all-data :refer [all-data]]))
 
 (enable-console-print!)
 
 (defn msg [& txt]
   (oset! (.getElementById js/document "msg") "textContent" (apply str txt)))
 
-(msg all-objects)
+(msg all-data)
 
 
 (defn create-material [scene obj r g b]
@@ -44,11 +44,11 @@
                            ; {}
                            {})
                          current-object)
-              ; (coll? current-object) (map helper current-object)
+              (coll? current-object) (map helper current-object)
               :else current-object))]
     (helper objects)))
 
-; some position changing functions should consider fps and some shouldnt
+; some position changing functions should consider fps and some shouldn't
 ; therefore the fps should be an argument to the update-fn
 
 
@@ -58,13 +58,13 @@
 ; mesh.onCollide = function(collidedMesh) {
 
 
-(defn babylon-get-obj [babylon-obj]
+(defn babylon-get-game-object [babylon-obj]
   (babel-tdd.oops-macros/oget-helper
     babylon-obj
     {:position ["position.x" "position.y" "position.z"]
      :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
 
-(defn babylon-update-obj [babylon-obj obj]
+(defn babylon-set-game-object-properties [babylon-obj obj]
   (babel-tdd.oops-macros/oset!-helper
     babylon-obj
     obj
@@ -72,11 +72,22 @@
     :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
 
 
+(defn get-next-game-objects [babylon-objs]
+  (map
+    (fn [babylon-obj]
+      (let [update-fn (oget babylon-obj "update-fn")
+            game-object (babylon-get-game-object babylon-obj)]
+        (update-fn game-object)))
+    babylon-objs))
+
+
 (defn babylon-update [babylon-objs]
-  (doseq [babylon-obj babylon-objs]
-    (let [update-fn (oget babylon-obj "update-fn")
-          obj (babylon-get-obj babylon-obj)]
-      (babylon-update-obj babylon-obj (update-fn obj)))))
+  (let [next-game-objects (get-next-game-objects babylon-objs)
+        next-pairs
+        ((comp (partial filter first) (partial map list)) next-game-objects babylon-objs)]
+    (doseq [next-pair next-pairs]
+        (babylon-set-game-object-properties (second next-pair) (first next-pair)))
+    (map second next-pairs)))
 
 (defn babylon-init
   ([] (babylon-init "render-canvas"))
@@ -88,10 +99,10 @@
          light (js/BABYLON.PointLight. "light" (js/BABYLON.Vector3. 10 10 0) scene)
          action-manager (js/BABYLON.ActionManager. scene)
          keys (atom {})
-         box (create-babylon-shape scene (:box all-objects))
+         box (create-babylon-shape scene (:box (:objects all-data)))
          babylon-objs [box]]
      (oset! scene "!actionManager" action-manager)
-     (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.0))
+     (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.8))
      (.render scene)
      (.registerAction
        action-manager

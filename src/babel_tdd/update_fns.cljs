@@ -17,7 +17,7 @@
     (assoc
       obj
       :position
-      [(mod (+ x 0.01) 1.0) y z]
+      [(mod (+ x 0.01) 2.0) y z]
       )))
 
 (defn move-up [obj]
@@ -25,5 +25,13 @@
     (assoc
       obj
       :position
-      [x (mod (+ y 0.01) 1.0) z]
+      [x (mod (+ y 0.01) 2.0) z]
       )))
+
+
+(comment
+  (defn move [obj]
+    (update
+      obj
+      :position
+      (partial map + (:force obj)))))

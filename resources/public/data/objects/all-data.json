@@ -1,0 +1,4 @@
+{
+  "objects": "public/data/objects/all-objects.json",
+  "games": "public/data/objects/all-games.json"
+}
