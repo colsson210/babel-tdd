@@ -3,7 +3,11 @@
 (defmacro oget-helper [babylon-obj translations]
   (reduce-kv
     (fn [m k v]
-      (assoc m k (vec (map (fn [path] `(~'oget ~babylon-obj ~path)) v))))
+      (assoc m k
+               (if (coll? v)
+                 (vec (map (fn [path] `(~'oget ~babylon-obj ~path)) v))
+                 `(~'oget ~babylon-obj ~v))
+               ))
     {}
     translations))
 

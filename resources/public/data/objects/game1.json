@@ -1,5 +1,8 @@
 {
   "objects-initial-state": [
     "public/data/objects/box.json"
+  ],
+  "add-fns": [
+    "babel-tdd.add-fns/no-objs"
   ]
 }

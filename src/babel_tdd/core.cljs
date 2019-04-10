@@ -27,6 +27,7 @@
                                                   scene))]
     (create-material scene babylon-shape 1.0 1.0 1.0)
     (oset! babylon-shape "!update-fn" (:update-fn obj))
+    (oset! babylon-shape "!force" [(* 0.01 (+ -1.0 (* 2.0 (rand)))) 0.01 0])
     babylon-shape))
 
 (defn ensure-has-babylon-shape [scene obj]
@@ -41,7 +42,6 @@
               (reduce-kv (fn [m k v] (assoc m k (helper v)))
                          (if (contains? current-object :shape)
                            {:babylon (create-babylon-shape scene current-object)}
-                           ; {}
                            {})
                          current-object)
               (coll? current-object) (map helper current-object)
@@ -58,11 +58,36 @@
 ; mesh.onCollide = function(collidedMesh) {
 
 
-(defn babylon-get-game-object [babylon-obj]
+(defn babylon-get-game-object-old [babylon-obj]
   (babel-tdd.oops-macros/oget-helper
     babylon-obj
     {:position ["position.x" "position.y" "position.z"]
-     :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
+     :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]
+     :force "force"}))
+
+(def translation {:position [["position" "x"] ["position" "y"] ["position" "z"]]
+                  :color    [["material" "emissiveColor" "r"] ["material" "emissiveColor" "g"] ["material" "emissiveColor" "b"]]
+                  :force "force"})
+
+(defn get-x [obj path]
+  (if (string? path)
+    (goog.object/get obj path)
+    (apply goog.object/getValueByKeys obj path)))
+
+(defn babylon-get-game-object [babylon-obj]
+  (reduce-kv
+    (fn [m k v]
+      (assoc
+        m
+        k
+        (if (coll? v)
+          (map (partial get-x babylon-obj) v)
+          (get-x babylon-obj v)
+          )))
+    {}
+    translation
+    ))
+
 
 (defn babylon-set-game-object-properties [babylon-obj obj]
   (babel-tdd.oops-macros/oset!-helper
@@ -71,23 +96,31 @@
     {:position ["position.x" "position.y" "position.z"]
     :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
 
-
 (defn get-next-game-objects [babylon-objs]
-  (map
-    (fn [babylon-obj]
-      (let [update-fn (oget babylon-obj "update-fn")
-            game-object (babylon-get-game-object babylon-obj)]
-        (update-fn game-object)))
-    babylon-objs))
+          (map
+            (fn [babylon-obj]
+              (let [update-fn (oget babylon-obj "update-fn")
+                    game-object (babylon-get-game-object babylon-obj)]
+                (prn "update-fn result" (update-fn game-object))
+                (update-fn game-object)))
+            babylon-objs))
 
 
-(defn babylon-update [babylon-objs]
+
+(defn get-next-babylon-objs [babylon-objs]
   (let [next-game-objects (get-next-game-objects babylon-objs)
         next-pairs
         ((comp (partial filter first) (partial map list)) next-game-objects babylon-objs)]
-    (doseq [next-pair next-pairs]
-        (babylon-set-game-object-properties (second next-pair) (first next-pair)))
+    (prn "next-game-objects" next-game-objects)
+    (prn "next-pairs" next-pairs)
+    (if (not-empty next-pairs)
+      (doseq [next-pair next-pairs]
+        (babylon-set-game-object-properties (second next-pair) (first next-pair))))
     (map second next-pairs)))
+
+(defn init-babylon-objs [scene]
+  [(create-babylon-shape scene (:box (:objects all-data)))])
+
 
 (defn babylon-init
   ([] (babylon-init "render-canvas"))
@@ -99,8 +132,7 @@
          light (js/BABYLON.PointLight. "light" (js/BABYLON.Vector3. 10 10 0) scene)
          action-manager (js/BABYLON.ActionManager. scene)
          keys (atom {})
-         box (create-babylon-shape scene (:box (:objects all-data)))
-         babylon-objs [box]]
+         babylon-objs (atom (init-babylon-objs scene))]
      (oset! scene "!actionManager" action-manager)
      (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.8))
      (.render scene)
@@ -114,7 +146,13 @@
        (js/BABYLON.ExecuteCodeAction.
          js/BABYLON.ActionManager.OnKeyUpTrigger
          (fn [event] (swap! keys dissoc (oget event "sourceEvent.key")))))
-     (.runRenderLoop engine (fn [] (babylon-update babylon-objs) (.render scene)))
+     (.runRenderLoop
+       engine
+       (fn []
+         (swap! babylon-objs get-next-babylon-objs)
+         (if (empty? @babylon-objs)
+           (swap! babylon-objs (fn [x] (init-babylon-objs scene))))
+         (.render scene)))
      )))
 
 (babylon-init)

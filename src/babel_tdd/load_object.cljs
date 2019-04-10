@@ -1,8 +1,14 @@
 (ns babel-tdd.load-object
-  (:require [babel-tdd.update-fns]))
+  (:require [babel-tdd.update-fns]
+            [babel-tdd.destroy-fns]))
+
+(defn call-if [f]
+  (fn [x] (if x (f x))))
 
 (defn create-update-fn [obj]
-  (apply comp (:update-fns obj)))
+  (apply
+    comp
+    (map call-if (:update-fns obj))))
 
 (defn load-object [obj]
   (cond

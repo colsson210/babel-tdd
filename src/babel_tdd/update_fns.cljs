@@ -29,9 +29,12 @@
       )))
 
 
-(comment
+
   (defn move [obj]
-    (update
+    (assoc
       obj
       :position
-      (partial map + (:force obj)))))
+      (map +
+           (:force obj)
+           ;[-0.01 0.01 0.01]
+           (:position obj))))

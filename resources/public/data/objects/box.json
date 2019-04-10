@@ -1,8 +1,8 @@
 {
   "update-fns": [
-    "babel-tdd.update-fns/move-right",
-    "babel-tdd.update-fns/move-up",
-    "babel-tdd.update-fns/color-by-position"
+    "babel-tdd.update-fns/move",
+    "babel-tdd.update-fns/color-by-position",
+    "babel-tdd.destroy-fns/x-above-1"
   ],
   "shape": "box"
 }
