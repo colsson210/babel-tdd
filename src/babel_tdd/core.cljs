@@ -88,13 +88,16 @@
     translation
     ))
 
-
 (defn babylon-set-game-object-properties [babylon-obj obj]
   (babel-tdd.oops-macros/oset!-helper
     babylon-obj
     obj
     {:position ["position.x" "position.y" "position.z"]
     :color    ["material.emissiveColor.r" "material.emissiveColor.g" "material.emissiveColor.b"]}))
+
+(defn babylon-set-game-object-properties2 [babylon-obj obj]
+  )
+
 
 (defn get-next-game-objects [babylon-objs]
           (map
@@ -105,17 +108,21 @@
                 (update-fn game-object)))
             babylon-objs))
 
-
-
 (defn get-next-babylon-objs [babylon-objs]
   (let [next-game-objects (get-next-game-objects babylon-objs)
+        pairs (map list next-game-objects babylon-objs)
         next-pairs
-        ((comp (partial filter first) (partial map list)) next-game-objects babylon-objs)]
+        ((comp (partial filter first) (partial map list)) next-game-objects babylon-objs)
+        objs-to-dispose ((comp (partial map second) (partial remove first)) pairs)
+        ]
     (prn "next-game-objects" next-game-objects)
     (prn "next-pairs" next-pairs)
     (if (not-empty next-pairs)
       (doseq [next-pair next-pairs]
         (babylon-set-game-object-properties (second next-pair) (first next-pair))))
+    (if (not-empty objs-to-dispose)
+      (doseq [obj-to-dispose objs-to-dispose]
+        (.dispose obj-to-dispose)))
     (map second next-pairs)))
 
 (defn init-babylon-objs [scene]
