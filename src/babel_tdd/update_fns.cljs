@@ -35,6 +35,6 @@
       obj
       :position
       (map +
-           (:force obj)
+           (get obj :force [0 0 0])
            ;[-0.01 0.01 0.01]
            (:position obj))))
