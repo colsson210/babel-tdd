@@ -4,5 +4,14 @@
   ],
   "add-fns": [
     "babel-tdd.add-fns/no-objs"
+  ],
+  "add-objects": [
+    {
+      "template": "public/data/objects/box.json",
+      "create-fn": "babel-tdd.add-fns/random-force",
+      "predicate-fns": [
+        "babel-tdd.add-fns/no-objs"
+      ]
+    }
   ]
 }

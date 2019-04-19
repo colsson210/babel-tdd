@@ -1,6 +1,7 @@
 (ns babel-tdd.load-object
   (:require [babel-tdd.update-fns]
-            [babel-tdd.destroy-fns]))
+            [babel-tdd.destroy-fns]
+            [babel-tdd.add-fns]))
 
 (defn call-if [f]
   (fn [x] (if x (f x))))
@@ -20,6 +21,7 @@
         (merge
           obj
           (if (contains? obj :shape) {:id (keyword (gensym))})
-          (if (contains? obj :update-fns) {:update-fn (create-update-fn obj)}))))
+          (if (contains? obj :update-fns) {:update-fn (create-update-fn obj)})
+          (if (contains? obj :add-fns) {:add-fns (first (:add-fns obj))}))))
     (coll? obj) (map load-object obj)
     :else obj))
