@@ -8,7 +8,10 @@
   "add-objects": [
     {
       "template": "public/data/objects/box.json",
-      "create-fn": "babel-tdd.add-fns/random-force",
+      "create-fns": [
+        "babel-tdd.add-fns/random-force",
+        "babel-tdd.add-fns/random-position"
+      ],
       "predicate-fns": [
         "babel-tdd.add-fns/no-objs"
       ]

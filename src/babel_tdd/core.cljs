@@ -81,23 +81,15 @@
      :force    [0 0 0]}
     template))
 
-(defn init-game-objs []
-  (assoc {}
-    (gensym "game-obj")
-    (merge
-      {:position [0 0 0]
-       :color    [0 0 0]
-       :force    [0.01 0.01 0]}
-      (:box (:objects all-data))
-      )
-    ))
+(defn init-game-objs [objs]
+  (reduce
+    (fn [acc val]
+      (assoc acc (gensym "game-obj") (init-game-obj val)))
+    {}
+    objs))
 
 (defn keys-diff [map-a map-b]
   (seq (clojure.set/difference (set (keys map-a)) (set (keys map-b)))))
-
-; (defn babylon-objs-keys-to-remove [babylon-objs game-objs] (keys-diff babylon-objs game-objs))
-
-; (defn missing-babylon-objs-keys [babylon-objs game-objs] (keys-diff game-objs babylon-objs))
 
 (defn create-babylon-objs [scene game-objs]
   (reduce-kv
@@ -162,7 +154,8 @@
          light (js/BABYLON.PointLight. "light" (js/BABYLON.Vector3. 10 10 0) scene)
          action-manager (js/BABYLON.ActionManager. scene)
          keys (atom {})
-         ; game-objs (atom (init-game-objs))
+         game1 (:game1 (:games all-data))
+         game-objs (atom (init-game-objs (get game1 :objects-inital-state {})))
          game-objs (atom {})
          babylon-objs (atom {})
          add-fns-pred (:add-fns (:games all-data))
@@ -188,16 +181,19 @@
          (let [babylon-objs-to-remove (get-babylon-objs-to-remove @babylon-objs @game-objs)
                keys-to-remove (clojure.core/keys babylon-objs-to-remove)]
            (dispose-babylon-objs babylon-objs-to-remove)
-           (swap! babylon-objs dissoc keys-to-remove)
-           )
+           (swap! babylon-objs dissoc keys-to-remove))
          (set-babylon-objs-properties @babylon-objs @game-objs)
          (doseq [add-obj add-objs]
-           (msg add-obj)
            (if ((:predicate-fn add-obj) @game-objs)
-             (swap! game-objs (:create-fn add-obj) (init-game-obj (:template add-obj)))
+             (swap!
+               game-objs
+               (fn [old-game-objs]
+                 (assoc
+                   old-game-objs
+                   (gensym "asdf")
+                   ((:create-fn add-obj) (init-game-obj (:template add-obj)))
+                   )))
              ))
-         ; tmp workaround to add objs before - game - add-fns
-         ; (if (empty? @game-objs)  (reset! game-objs (init-game-objs)))
          ))
      )))
 
