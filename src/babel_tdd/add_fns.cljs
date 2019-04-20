@@ -2,8 +2,12 @@
 
 (def no-objs empty?)
 
-(defn random-force [obj]
+
+(defn random-force [objs new-obj]
   (assoc
-    obj
-    :force
-    [(* 0.01 (+ -1.0 (* 2.0 (rand)))) 0.01 0]))
+    objs
+    (gensym "gobj")
+    (assoc
+      new-obj
+      :force
+      [(* 0.01 (+ -1.0 (* 2.0 (rand)))) 0.01 0])))

@@ -74,6 +74,13 @@
 (defn init-babylon-objs [scene]
   [(create-babylon-shape scene (:box (:objects all-data)))])
 
+(defn init-game-obj [template]
+  (merge
+    {:position [0 0 0]
+     :color    [0 0 0]
+     :force    [0 0 0]}
+    template))
+
 (defn init-game-objs []
   (assoc {}
     (gensym "game-obj")
@@ -112,7 +119,7 @@
 (defn get-next-game-objs [game-objs]
   (reduce-kv
     (fn [m k v]
-      (let [next-v ((:update-fn v) v)]
+      (let [next-v ((get v :update-fn identity) v)]
         (if next-v
           (assoc m k next-v)
           m)))
@@ -155,9 +162,11 @@
          light (js/BABYLON.PointLight. "light" (js/BABYLON.Vector3. 10 10 0) scene)
          action-manager (js/BABYLON.ActionManager. scene)
          keys (atom {})
-         game-objs (atom (init-game-objs))
+         ; game-objs (atom (init-game-objs))
+         game-objs (atom {})
          babylon-objs (atom {})
-         add-fns-pred (:add-fns (:games all-data))]
+         add-fns-pred (:add-fns (:games all-data))
+         add-objs (:add-objects (:game1 (:games all-data)))]
      (oset! scene "!actionManager" action-manager)
      (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.8))
      (.registerAction
@@ -182,9 +191,13 @@
            (swap! babylon-objs dissoc keys-to-remove)
            )
          (set-babylon-objs-properties @babylon-objs @game-objs)
+         (doseq [add-obj add-objs]
+           (msg add-obj)
+           (if ((:predicate-fn add-obj) @game-objs)
+             (swap! game-objs (:create-fn add-obj) (init-game-obj (:template add-obj)))
+             ))
          ; tmp workaround to add objs before - game - add-fns
-         (if (empty? @game-objs)
-           (reset! game-objs (init-game-objs)))
+         ; (if (empty? @game-objs)  (reset! game-objs (init-game-objs)))
          ))
      )))
 

@@ -1,0 +1,17 @@
+{
+  "objects-initial-state": [
+    "public/data/objects/box.json"
+  ],
+  "add-fns": [
+    "babel-tdd.add-fns/no-objs"
+  ],
+  "add-objects": [
+    {
+      "template": "public/data/objects/box.json",
+      "create-fnx": "babel-tdd.add-fns/random-force",
+      "predicate-fnsx": [
+        "babel-tdd.add-fns/no-objs"
+      ]
+    }
+  ]
+}

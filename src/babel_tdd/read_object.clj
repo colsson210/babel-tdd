@@ -16,7 +16,7 @@
             (clojure.string/ends-with? (str k) "-fns") (vec (map emit-cljs-resolve v))
             (clojure.string/ends-with? (str k) "-fn") (emit-cljs-resolve v)
             (map? v) (read-object-fn v)
-            (coll? v) (map read-object-fn v)
+            (coll? v) (vec (map read-object-fn v))
             :else v)))
       {}
       obj)

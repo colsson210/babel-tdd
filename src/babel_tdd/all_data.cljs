@@ -3,6 +3,9 @@
   (:require [babel-tdd.load-object]))
 
 
+(def a
+  (babel-tdd.read-object/read-object "public/data/objects/all-data.json"))
+
 (def all-data
   (->>
     "public/data/objects/all-data.json"
