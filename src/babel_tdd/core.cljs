@@ -74,19 +74,7 @@
 (defn init-babylon-objs [scene]
   [(create-babylon-shape scene (:box (:objects all-data)))])
 
-(defn init-game-obj [template]
-  (merge
-    {:position [0 0 0]
-     :color    [0 0 0]
-     :force    [0 0 0]}
-    template))
 
-(defn init-game-objs [objs]
-  (reduce
-    (fn [acc val]
-      (assoc acc (gensym "game-obj") (init-game-obj val)))
-    {}
-    objs))
 
 (defn keys-diff [map-a map-b]
   (seq (clojure.set/difference (set (keys map-a)) (set (keys map-b)))))
@@ -105,17 +93,6 @@
         next-babylon-objs
         (assoc next-babylon-objs key (create-babylon-shape scene game-obj))))
     babylon-objs
-    game-objs))
-
-
-(defn get-next-game-objs [game-objs]
-  (reduce-kv
-    (fn [m k v]
-      (let [next-v ((get v :update-fn identity) v)]
-        (if next-v
-          (assoc m k next-v)
-          m)))
-    {}
     game-objs))
 
 (defn get-babylon-objs-to-remove [babylon-objs game-objs]
@@ -144,6 +121,44 @@
         (oset! babylon-obj "material.emissiveColor.g" g)
         (oset! babylon-obj "material.emissiveColor.b" b)))))
 
+
+
+(defn add-game-obj [objs obj]
+  (assoc objs (gensym "game-obj") obj))
+
+(defn init-game-obj [template]
+  (merge
+    {:position [0 0 0]
+     :color    [0 0 0]
+     :force    [0 0 0]}
+    template))
+
+(defn init-game-objs [objs]
+  (reduce
+    (fn [acc val]
+      (assoc acc (gensym "game-obj") (init-game-obj val)))
+    {}
+    objs))
+
+(defn get-next-game-objs [game-objs]
+  (reduce-kv
+    (fn [m k v]
+      (let [next-v ((get v :update-fn identity) v)]
+        (if next-v
+          (assoc m k next-v)
+          m)))
+    {}
+    game-objs))
+
+(defn game-objects-render-loop-tick! [game-objects add-game-objects]
+  (swap! game-objects get-next-game-objs)
+  (doseq [add-game-object add-game-objects]
+    (if ((:predicate-fn add-game-object) @game-objects)
+      (swap!
+        game-objects
+        (fn [old-game-objects]
+          (add-game-obj old-game-objects ((:create-fn add-game-object) (init-game-obj (:template add-game-object)))))))))
+
 (defn babylon-init
   ([] (babylon-init "render-canvas"))
   ([canvas-id]
@@ -155,11 +170,9 @@
          action-manager (js/BABYLON.ActionManager. scene)
          keys (atom {})
          game1 (:game1 (:games all-data))
-         game-objs (atom (init-game-objs (get game1 :objects-inital-state {})))
          game-objs (atom {})
          babylon-objs (atom {})
-         add-fns-pred (:add-fns (:games all-data))
-         add-objs (:add-objects (:game1 (:games all-data)))]
+         add-objs (:add-objects game1)]
      (oset! scene "!actionManager" action-manager)
      (oset! scene "clearColor" (js/BABYLON.Color3. 0.8 0.8 0.8))
      (.registerAction
@@ -175,25 +188,14 @@
      (.runRenderLoop
        engine
        (fn []
-         (.render scene)
-         (swap! game-objs get-next-game-objs)
+         (game-objects-render-loop-tick! game-objs, add-objs)
          (swap! babylon-objs add-babylon-objs scene @game-objs)
          (let [babylon-objs-to-remove (get-babylon-objs-to-remove @babylon-objs @game-objs)
                keys-to-remove (clojure.core/keys babylon-objs-to-remove)]
            (dispose-babylon-objs babylon-objs-to-remove)
            (swap! babylon-objs dissoc keys-to-remove))
          (set-babylon-objs-properties @babylon-objs @game-objs)
-         (doseq [add-obj add-objs]
-           (if ((:predicate-fn add-obj) @game-objs)
-             (swap!
-               game-objs
-               (fn [old-game-objs]
-                 (assoc
-                   old-game-objs
-                   (gensym "asdf")
-                   ((:create-fn add-obj) (init-game-obj (:template add-obj)))
-                   )))
-             ))
+         (.render scene)
          ))
      )))
 
